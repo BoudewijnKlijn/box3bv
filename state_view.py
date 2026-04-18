@@ -1,58 +1,90 @@
-"""Staatsopbrengst en Pareto-kaart BV vs box 3 (analytisch, vaste groei)."""
+"""Staatsopbrengst (numeriek) en Pareto-kaart (binair, fijnmazig)."""
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import ListedColormap, LogNorm
+from matplotlib.patches import Patch
 
 import analytic
+import box3
+import bv
+import state
+from tax import DEFAULT, Taxes
 
 
-def _annotate(ax, values, fmt, norm=None):
-    rows, cols = values.shape
-    for i in range(rows):
-        for j in range(cols):
-            v = values[i, j]
-            color = "white" if (norm and norm(v) < 0.5) else "black"
-            ax.text(j, i, fmt.format(v), ha="center", va="center",
-                    color=color, fontsize=8)
+def _pareto_grid(years: np.ndarray, growths: np.ndarray, d: float,
+                 taxes: Taxes) -> tuple[np.ndarray, np.ndarray]:
+    """Simulatie-gebaseerde winnaars-matrix (len(growths), len(years))."""
+    per_euro = Taxes(box3_rate=taxes.box3_rate, box3_vrijstelling=0.0,
+                     vpb=taxes.vpb, box2_rate=taxes.box2_rate)
+    t_max = int(years.max())
+    total = np.broadcast_to(growths + d, (t_max, len(growths))).copy()
+    grow = np.broadcast_to(growths, (t_max, len(growths))).copy()
+    w3, tax3 = box3.simulate(1.0, total, per_euro)
+    wb, vpb_flow, exit_tax = bv.simulate(1.0, grow, d, per_euro)
+    cum3 = state.box3_cum_tax(tax3)
+    cumbv = state.bv_cum_tax(vpb_flow, exit_tax)
+    idx = years.astype(int)
+    inv = (wb[idx] > w3[idx]).T
+    st = (cumbv[idx] > cum3[idx]).T
+    return inv, st
 
 
-def _ticks(ax, years, growths):
-    ax.set_xticks(range(len(years)), years)
-    ax.set_yticks(range(len(growths)), [f"{g:.2f}" for g in growths])
+def _ticks(ax, xvals, yvals, yfmt="{:.2%}"):
+    xstep = max(1, len(xvals) // 10)
+    ystep = max(1, len(yvals) // 10)
+    ax.set_xticks(range(0, len(xvals), xstep), xvals[::xstep])
+    ax.set_yticks(range(0, len(yvals), ystep),
+                  [yfmt.format(y) for y in yvals[::ystep]])
     ax.set_xlabel("Jaar in BV")
     ax.set_ylabel("Koers CAGR")
 
 
-def main() -> None:
+def plot_state_heatmap(d: float = 0.02, taxes: Taxes = DEFAULT) -> None:
+    """Numerieke heatmap van staats-ratio (analytisch, grove grid)."""
     years = np.arange(3, 42, 3)
     growths = np.linspace(0.0, 0.1, 11)
-    d = 0.02
-
     T, G = np.meshgrid(years, growths)
-    inv = analytic.ratio(T, G, d)
-    st = analytic.state_ratio(T, G, d)
+    st = analytic.state_ratio(T, G, d, taxes)
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
-
+    fig, ax = plt.subplots(figsize=(9, 6))
     norm = LogNorm(vmin=st.min(), vmax=st.max())
-    ax1.imshow(st, cmap="viridis", norm=norm, origin="lower", aspect="auto")
-    _ticks(ax1, years, growths)
-    ax1.set_title(f"Staatsopbrengst BV / box 3  (d={d:.2%})")
-    _annotate(ax1, st, "{:.2f}", norm)
-
-    # Pareto: 0=niemand, 1=alleen staat, 2=alleen belegger, 3=beide
-    cat = (inv > 1.0).astype(int) * 2 + (st > 1.0).astype(int)
-    cmap = ListedColormap(["#b00020", "#f4a261", "#2a9d8f", "#1d3557"])
-    ax2.imshow(cat, cmap=cmap, vmin=-0.5, vmax=3.5, origin="lower", aspect="auto")
-    _ticks(ax2, years, growths)
-    ax2.set_title("Wie wint? (belegger | staat)")
-    labels = np.array([["niemand", "staat"], ["belegger", "beide"]])
-    for i in range(cat.shape[0]):
-        for j in range(cat.shape[1]):
-            ax2.text(j, i, labels[(inv[i, j] > 1) * 1, (st[i, j] > 1) * 1],
-                     ha="center", va="center", color="white", fontsize=7)
-
+    ax.imshow(st, cmap="viridis", norm=norm, origin="lower", aspect="auto")
+    _ticks(ax, years, growths)
+    ax.set_title(f"Staatsopbrengst BV / box 3 (d={d:.2%})")
+    for i in range(st.shape[0]):
+        for j in range(st.shape[1]):
+            c = "white" if norm(st[i, j]) < 0.5 else "black"
+            ax.text(j, i, f"{st[i, j]:.2f}", ha="center", va="center",
+                    color=c, fontsize=9)
     fig.tight_layout()
+
+
+def plot_pareto(d: float = 0.02, taxes: Taxes = DEFAULT) -> None:
+    """Fijnmazige Pareto-kaart inclusief negatieve groei."""
+    years = np.arange(1, 51)
+    growths = np.linspace(-0.05, 0.15, 81)
+    inv, st = _pareto_grid(years, growths, d, taxes)
+    cat = inv.astype(int) * 2 + st.astype(int)
+
+    cmap = ListedColormap(["#b00020", "#f4a261", "#2a9d8f", "#1d3557"])
+    fig, ax = plt.subplots(figsize=(11, 6))
+    ax.imshow(cat, cmap=cmap, vmin=-0.5, vmax=3.5, origin="lower", aspect="auto")
+    _ticks(ax, years, growths)
+    ax.axhline(np.argmin(np.abs(growths)), color="white", lw=0.5, ls=":")
+    ax.set_title(f"Wie wint met BV? (d={d:.2%})")
+    legend = [
+        Patch(color="#b00020", label="niemand"),
+        Patch(color="#f4a261", label="alleen staat"),
+        Patch(color="#2a9d8f", label="alleen belegger"),
+        Patch(color="#1d3557", label="beide"),
+    ]
+    ax.legend(handles=legend, loc="lower right", framealpha=0.9)
+    fig.tight_layout()
+
+
+def main() -> None:
+    plot_state_heatmap()
+    plot_pareto()
     plt.show()
 
 
