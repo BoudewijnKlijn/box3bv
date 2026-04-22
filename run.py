@@ -9,10 +9,10 @@ import returns
 def main() -> None:
     years, sims = 30, 20_000
     start = 100_000.0
-    # SPY-kalibratie (1993-heden): total return ~10.3%, stdev ~15%,
-    # dividend yield ~1.8% → koerswinst ~8.5%.
-    dividend_yield = 0.018
-    mean, std = 0.085, 0.15
+    # VT-kalibratie (2008-heden): total return ~8%, stdev ~17%,
+    # dividend yield ~2.0% → koerswinst ~6%.
+    dividend_yield = 0.020
+    mean, std = 0.060, 0.17
 
     rng = np.random.default_rng(42)
     growth = returns.lognormal_from_mean_std(mean, std, years, sims, rng)
@@ -36,7 +36,7 @@ def main() -> None:
     ax2.set_ylabel("P(BV > box 3)")
     ax2.set_ylim(0, 1)
 
-    fig.suptitle(f"start=€{start:,.0f}, mean={mean}, std={std}, div={dividend_yield} (SPY-like, lognormaal)")
+    fig.suptitle(f"start=€{start:,.0f}, mean={mean}, std={std}, div={dividend_yield} (VT-like, lognormaal)")
     fig.tight_layout()
     plt.show()
 
