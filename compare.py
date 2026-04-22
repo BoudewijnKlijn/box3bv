@@ -8,13 +8,18 @@ from tax import DEFAULT, Taxes
 
 
 def run(start: float, growth: np.ndarray, dividend_yield: float,
-        taxes: Taxes = DEFAULT) -> dict[str, np.ndarray]:
-    """Simuleer beide routes; retourneer vermogen, belasting en ratio's."""
+        taxes: Taxes = DEFAULT,
+        state_rate: float = 0.02) -> dict[str, np.ndarray]:
+    """Simuleer beide routes; retourneer vermogen, belasting en ratio's.
+
+    `state_rate` is de rente waarmee de staat tussentijds ontvangen belasting
+    herbelegt — relevant voor de `tax_ratio`-vergelijking.
+    """
     total_return = growth + dividend_yield
     w3, tax3 = box3.simulate(start, total_return, taxes)
     wbv, vpb_flow, exit_tax = bv.simulate(start, growth, dividend_yield, taxes)
-    cum3 = state.box3_cum_tax(tax3)
-    cumbv = state.bv_cum_tax(vpb_flow, exit_tax)
+    cum3 = state.box3_cum_tax(tax3, state_rate)
+    cumbv = state.bv_cum_tax(vpb_flow, exit_tax, state_rate)
     return {
         "box3": w3, "bv": wbv, "ratio": wbv / w3,
         "tax_box3": cum3, "tax_bv": cumbv,

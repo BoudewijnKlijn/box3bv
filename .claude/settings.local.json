@@ -3,7 +3,8 @@
     "allow": [
       "Bash(jupyter nbconvert *)",
       "Bash(.venv/Scripts/python.exe -c ' *)",
-      "Bash(uv run *)"
+      "Bash(uv run *)",
+      "Bash(uv add *)"
     ]
   }
 }
