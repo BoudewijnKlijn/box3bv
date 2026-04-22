@@ -8,7 +8,15 @@ Simulaties die de BV/box 2-route vergelijken met box 3, voor zowel belegger als 
 uv run python run.py          # ratio belegger over tijd (Monte Carlo)
 uv run python heatmap.py      # analytische ratio over (jaren, CAGR)
 uv run python state_view.py   # staatsopbrengst + Pareto-kaart
+uv run python plots.py        # alle bovenstaande in één keer naar plots/
 ```
+
+## Resultaten (default-waarden)
+
+![run](plots/run.png)
+![heatmap](plots/heatmap.png)
+![state_heatmap](plots/state_heatmap.png)
+![state_pareto](plots/state_pareto.png)
 
 ## Modules
 
@@ -30,7 +38,6 @@ uv run python state_view.py   # staatsopbrengst + Pareto-kaart
 
 ## Parameters om aan te passen
 
-- In `run.py`: `years`, `sims`, `start`, `dividend_yield`, `mu`, `sigma`, seed.
-- In `heatmap.py` / `state_view.py` (`main`): `years`-range, `growths`-range, `d` (dividend yield).
-- Belasting: instantieer `Taxes(box3_rate=..., box3_vrijstelling=..., vpb=..., box2_rate=...)` en geef mee aan `simulate` / `run` / `plot_*`.
-- Staatsrente: `state_rate` in `compare.run` (default 2%) — waarmee de staat tussentijdse heffingen herbelegt.
+Pas **`.env`** aan — alle defaults staan daar (belastingtarieven, staatsrente, markt-kalibratie, `YEARS`/`SIMS`/`START`/`SEED`). `config.py` laadt ze en alle scripts lezen daaruit.
+
+Alleen als je per-call wil afwijken: `Taxes(box3_rate=..., ...)`, `compare.run(..., state_rate=...)`, `plot_pareto(d=..., state_rate=...)`.

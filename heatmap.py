@@ -5,9 +5,11 @@ import numpy as np
 from matplotlib.colors import LogNorm
 
 import analytic
+import config
 
 
-def plot(years: np.ndarray, growths: np.ndarray, dividend_yield: float = 0.02) -> None:
+def plot(years: np.ndarray, growths: np.ndarray,
+         dividend_yield: float = config.DIVIDEND_YIELD) -> None:
     """Plot ratio-matrix met annotaties per cel."""
     T, G = np.meshgrid(years, growths)
     r = analytic.ratio(T, G, dividend_yield)
@@ -33,9 +35,9 @@ def plot(years: np.ndarray, growths: np.ndarray, dividend_yield: float = 0.02) -
 
 
 def main() -> None:
-    years = np.arange(0, 30, 1)
+    years = np.arange(0, config.YEARS, 1)
     growths = np.linspace(0.0, 0.1, 11)
-    plot(years, growths, dividend_yield=0.02)
+    plot(years, growths, dividend_yield=config.DIVIDEND_YIELD)
 
 
 if __name__ == "__main__":

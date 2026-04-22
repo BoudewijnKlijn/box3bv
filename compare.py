@@ -3,13 +3,14 @@ import numpy as np
 
 import box3
 import bv
+import config
 import state
 from tax import DEFAULT, Taxes
 
 
 def run(start: float, growth: np.ndarray, dividend_yield: float,
         taxes: Taxes = DEFAULT,
-        state_rate: float = 0.02) -> dict[str, np.ndarray]:
+        state_rate: float = config.STATE_RATE) -> dict[str, np.ndarray]:
     """Simuleer beide routes; retourneer vermogen, belasting en ratio's.
 
     `state_rate` is de rente waarmee de staat tussentijds ontvangen belasting

@@ -3,21 +3,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import compare
+import config
 import returns
 
 
 def main() -> None:
-    years, sims = 30, 20_000
-    start = 100_000.0
-    # VT-kalibratie (2008-heden): total return ~8%, stdev ~17%,
-    # dividend yield ~2.0% → koerswinst ~6%.
-    dividend_yield = 0.020
-    mean, std = 0.060, 0.17
+    years, sims = config.YEARS, config.SIMS
+    start = config.START
+    dividend_yield = config.DIVIDEND_YIELD
+    mean, std = config.MEAN, config.STD
+    state_rate = config.STATE_RATE
 
-    rng = np.random.default_rng(42)
+    rng = np.random.default_rng(config.SEED)
     growth = returns.lognormal_from_mean_std(mean, std, years, sims, rng)
 
-    result = compare.run(start, growth, dividend_yield)
+    result = compare.run(start, growth, dividend_yield, state_rate=state_rate)
     stats = compare.summary(result)
 
     x = np.arange(years + 1)
@@ -36,7 +36,10 @@ def main() -> None:
     ax2.set_ylabel("P(BV > box 3)")
     ax2.set_ylim(0, 1)
 
-    fig.suptitle(f"start=€{start:,.0f}, mean={mean}, std={std}, div={dividend_yield} (VT-like, lognormaal)")
+    fig.suptitle(
+        f"start=€{start:,.0f}, mean={mean}, std={std}, div={dividend_yield}, "
+        f"staatsrente={state_rate} (VT-like, lognormaal)"
+    )
     fig.tight_layout()
     plt.show()
 
